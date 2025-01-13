@@ -1,0 +1,8 @@
+#!/bin/bash
+if [ $# -eq 0 ]; then
+    target_dir=$(pwd)
+else
+    target_dir=$(realpath $1)
+fi
+source ~/bin/screenshot_py/.venv/Scripts/activate
+python screenshot_py/app.py $target_dir

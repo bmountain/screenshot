@@ -1,10 +1,10 @@
 import tkinter as tk
 import screeninfo
 
-from PIL import Image, ImageGrab
+from PIL import ImageGrab
 from datetime import datetime
-import os
 
+root = tk.Tk()
 
 class MyCanvasApp:
     def __init__(self, master):
@@ -95,12 +95,10 @@ class MyCanvasApp:
         img.save(filename)  # Screenshot save to file
 
 
-root = tk.Tk()
-app = MyCanvasApp(root)
-app.master.mainloop()
-print("after mainloop")
+def main():
+    app = MyCanvasApp(root)
+    app.master.mainloop()
 
-# if __name__ == "__main__":
-#     root = tk.Tk()
-#     app = MyCanvasApp(root)
-#     root.mainloop()
+
+if __name__ == "__main__":
+    main()

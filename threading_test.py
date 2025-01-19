@@ -1,36 +1,41 @@
-import queue
 import keyboard  
 import threading
-import time
-import datetime
 import tkinter as tk
-# from pynput import keyboard, mouse
+from pynput import keyboard, mouse
+
+
+def on_press(key):
+    if hasattr(key, 'vk') and 96 <= key.vk <= 105:
+        print(f'{key} pressed!')
+
+def on_move(x, y):
+    print('Pointer moved to {0}'.format(
+        (x, y)))
+
+def on_click(x, y, button, pressed):
+    print('{0} at {1}'.format(
+        'Pressed' if pressed else 'Released',
+        (x, y)))
 
 def app_main_loop(my_label):
-    # Create another thread that monitors the keyboard
-    input_queue = queue.Queue()
-    kb_input_thread = threading.Thread(target=_check_esc_pressed, args=(input_queue,))
-    kb_input_thread.daemon = True
-    kb_input_thread.start()
+    keyboard_listener = keyboard.Listener(
+        on_press=on_press,
+     )
+    keyboard_listener.daemon = True
+    keyboard_listener.start()
+    mouse_listener = mouse.Listener(
+        on_move=on_move, on_click=on_click
+    )
+    mouse_listener.daemon = True
+    mouse_listener.start()
     
-    # Main logic loop
-    run_active = True
-    while True:
-        if not input_queue.empty():
-            if (run_active) and (input_queue.get() == "esc"):
-                # run_active = False
-                Lap(my_label)
-                # Stop()
-        time.sleep(0.1)  # seconds
+def record_event(input_queue):
+    """キーボード・マウスのイベントを記録する"""
+    pass
+    
 
-def _check_esc_pressed(input_queue):
-    while True:
-        if keyboard.is_pressed('esc'):
-            input_queue.put("esc")
-        time.sleep(0.1) # seconds
-
-def Lap(my_label):
-    my_label.configure(text = datetime.datetime.now())
+def show_message(message):
+    my_label.configure(text = message)
 
 def Stop():
     print("Stopped")

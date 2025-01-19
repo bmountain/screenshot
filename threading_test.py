@@ -3,43 +3,34 @@ import threading
 import tkinter as tk
 from pynput import keyboard, mouse
 
+class KeyboardLister(keyboard.Listener):
+    """テンキーを取得する"""
+    def __init__(self):
+        super().__init__(on_press=self.on_press)
+        self.daemon = True
+    def on_press(self, key):
+        if hasattr(key, 'vk') and 96 <= key.vk <= 105:
+            print(f'{key} pressed!')
 
-def on_press(key):
-    if hasattr(key, 'vk') and 96 <= key.vk <= 105:
-        print(f'{key} pressed!')
-
-def on_move(x, y):
-    print('Pointer moved to {0}'.format(
-        (x, y)))
-
-def on_click(x, y, button, pressed):
-    print('{0} at {1}'.format(
-        'Pressed' if pressed else 'Released',
-        (x, y)))
+class MouseListener(mouse.Listener):
+    """マウスを取得する"""
+    def __init__(self):
+        super().__init__(on_move=self.on_move, on_click=self.on_click)
+        self.daemon = True
+    def on_move(self, x, y):
+        print('Pointer moved to {0}'.format(
+            (x, y)))
+    def on_click(self, x, y, button, pressed):
+        print('{0} at {1}'.format(
+            'Pressed' if pressed else 'Released',
+            (x, y)))
 
 def app_main_loop(my_label):
-    keyboard_listener = keyboard.Listener(
-        on_press=on_press,
-     )
-    keyboard_listener.daemon = True
+    keyboard_listener = KeyboardLister()
     keyboard_listener.start()
-    mouse_listener = mouse.Listener(
-        on_move=on_move, on_click=on_click
-    )
-    mouse_listener.daemon = True
+    mouse_listener = MouseListener()
     mouse_listener.start()
     
-def record_event(input_queue):
-    """キーボード・マウスのイベントを記録する"""
-    pass
-    
-
-def show_message(message):
-    my_label.configure(text = message)
-
-def Stop():
-    print("Stopped")
-
 if __name__ == "__main__":
     # Create the ui
     root = tk.Tk()

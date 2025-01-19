@@ -4,11 +4,10 @@ import screeninfo
 from PIL import ImageGrab
 from datetime import datetime
 
-root = tk.Tk()
 
 class MyCanvasApp:
-    def __init__(self, master):
-        self.master = master
+    def __init__(self, root):
+        self.root = root
 
         # Set Variables
         self.rect_id = None
@@ -17,15 +16,15 @@ class MyCanvasApp:
         screen = screeninfo.get_monitors()[0]
         self.screen_width = screen.width
         self.screen_height = screen.height
-        # Create master window
-        master_geometry = (
+        # Create root window
+        root_geometry = (
             str(self.screen_width) + "x" + str(self.screen_height)
         )  # Creates a geometric string argument
-        master.geometry(master_geometry)  # Sets the geometry string value
+        root.geometry(root_geometry)  # Sets the geometry string value
 
-        master.overrideredirect(True)
-        master.wait_visibility(master)
-        master.attributes("-alpha", 0.25)  # Set windows transparent
+        root.overrideredirect(True)
+        root.wait_visibility(root)
+        root.attributes("-alpha", 0.25)  # Set windows transparent
 
         # Create canvas on root windows
         self.canvas = tk.Canvas(
@@ -57,12 +56,10 @@ class MyCanvasApp:
         self.canvas.bind(
             "<Button-2>", lambda x: root.destroy()
         )  # Quit without screenshot with middle click
-        print("init", self.topx, self.topy, self.botx, self.boty)
 
     # Get mouse position function
     def get_mouse_posn(self, event):
         self.topx, self.topy = event.x, event.y
-        print("mouse position event:", event)
 
     # Update selection rectangle function
     def update_sel_rect(self, event):
@@ -70,22 +67,19 @@ class MyCanvasApp:
         self.canvas.coords(
             self.rect_id, self.topx, self.topy, self.botx, self.boty
         )  # Update selection rect.
-        print("update event:", event)
-        print(self.topx, self.topy, self.botx, self.boty)
 
     # Get screenshot function
     def get_screenshot(self, event):
-        print("in get", self.topx, self.topy, self.botx, self.boty)
 
         if self.topx > self.botx:
             self.topx, self.botx = self.botx, self.topx
 
         if self.topy > self.boty:
             self.topy, self.boty = self.boty, self.topy
-        # self.master.after(
+        # self.root.after(
         #     15
         # )  ##### Wait for tkinter destruction, increase if you see a tint in your screenshots
-        self.master.destroy()  # Destroy tkinter, otherwise a transparent window will be on top of desktop
+        self.root.destroy()  # Destroy tkinter, otherwise a transparent window will be on top of desktop
         filename = datetime.now().strftime(
             "%Y-%m-%d_%H-%M-%S.png"
         )  # filename determine
@@ -96,8 +90,9 @@ class MyCanvasApp:
 
 
 def main():
+    root = tk.Tk()
     app = MyCanvasApp(root)
-    app.master.mainloop()
+    app.root.mainloop()
 
 
 if __name__ == "__main__":

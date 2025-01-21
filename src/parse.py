@@ -2,38 +2,60 @@ import argparse
 import datetime
 from pathlib import Path
 
+from screenshot_class import start_app
+
 DEBUG = True
 
 
-def parse():
-    """引数のパース"""
-    if DEBUG:
-        now = "test"
-    else:
-        now = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+def parse() -> tuple[list[int], int, str]:
+    """
+    引数をパースする
+
+    Returns:
+        項番一覧、初期項番、作成する親ディレクトリの名前
+    """
+    # デフォルトの保存先ディレクトリ名
+    now: str = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+
     parser = argparse.ArgumentParser(description="スクリーンショットを連続で撮影する。")
     parser.add_argument(
         "-n",
-        "--number",
+        "--numbers",
         type=int,
         nargs="*",
         required=True,
         help="項番。スペース区切りの自然数で指定。",
     )
     parser.add_argument(
-        "-s", "--start", default=-1, type=int, help="撮影開始時の項番。"
+        "-s", "--start", default=None, type=int, help="撮影開始時の項番。"
     )
     parser.add_argument(
         "-d", "--dirname", default=now, type=str, help="保存先のディレクトリ名。"
     )
     args = parser.parse_args()
-    return args.number, args.start, args.dirname
+    numbers, start, dirname = args.numbers, args.start, args.dirname
+
+    # startが有効な値でなければnumbersの最小値とする
+    if start is None or start not in numbers:
+        start = min(numbers)
+
+    return numbers, start, dirname
 
 
-def makedirs(number, dirname):
-    """引数からディレクトリを作成し保存先の子ディレクトリパスを返す"""
+def makedirs(numbers: list[int], dirname: str) -> list[Path]:
+    """
+    親ディレクトリとその子ディレクトリを作る
+
+    Args:
+        numbers: 項番一覧
+        dirname: 親ディレクトリ名
+
+    Returns:
+        子ディレクトリのパス一覧
+    """
+
     parent = Path.cwd() / Path(dirname)
-    children = [parent / Path(f"{n}") for n in number]
+    children = [parent / Path(f"{n}") for n in numbers]
     parent.mkdir(exist_ok=True)
     for child in children:
         child.mkdir(exist_ok=True)
@@ -41,6 +63,6 @@ def makedirs(number, dirname):
 
 
 if __name__ == "__main__":
-    number, start, dirname = parse()
-    dirs = makedirs(number, dirname)
-    start(dirs, number.index(start))
+    numbers, start, dirname = parse()
+    dirs = makedirs(numbers, dirname)
+    start_app(dirs, numbers.index(start))

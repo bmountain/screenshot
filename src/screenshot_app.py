@@ -1,8 +1,8 @@
 import asyncio
 import glob
 import os
+import platform
 import re
-import threading
 import tkinter as tk
 import winsound
 from pathlib import Path
@@ -16,10 +16,11 @@ async def play_sound() -> None:
     """
     スクショした時の音を鳴らす
     """
-    winsound.PlaySound(
-        r"C:\Windows\Media\Windows Notify System Generic.wav",
-        winsound.SND_FILENAME | winsound.SND_ASYNC,
-    )
+    if platform.system() == "Windows":
+        winsound.PlaySound(
+            r"C:\Windows\Media\Windows Notify System Generic.wav",
+            winsound.SND_FILENAME | winsound.SND_ASYNC,
+        )
 
 
 class KeyboardListener(keyboard.Listener):
@@ -37,13 +38,13 @@ class KeyboardListener(keyboard.Listener):
         テンキー押下を検出してScreenshotAppにイベントを送信する
 
         Args:
-            key: 押されたテンキーのキーコード
+            key: 押下されたキー
         """
         if isinstance(key, keyboard.KeyCode):
             if key.vk == 96:
                 self.root.event_generate("<<FullScreenshotEvent>>")
             if key.vk == 97:
-                self.root.event_generate("<<ScreenshotAppEvent>>")
+                self.root.event_generate("<<MouseScreenshotEvent>>")
             if key.vk == 100:
                 self.root.event_generate("<<BackEvent>>")
             if key.vk == 102:
@@ -63,30 +64,12 @@ class ScreenshotApp:
         self.topx, self.topy, self.botx, self.boty = 0, 0, 0, 0
         self.set_root_appearance()
         self.set_canvas_appearance()
+        self.make_app_invisible(event=None)
         self.reset_cord()
         self.set_bind()
-        self.make_app_invisible(event=None)
         keyboard_listener = KeyboardListener(self.root)
         keyboard_listener.start()
         self.prompt()
-
-    def reset_cord(self) -> None:
-        self.topx, self.topy, self.botx, self.boty = 0, 0, 0, 0
-        self.canvas.coords(self.rect_id, 0, 0, 0, 0)
-
-    def set_bind(self):
-        """イベントに関数をバインド"""
-        # マウスイベント
-        self.canvas.bind("<Button-1>", self.get_mouse_posn)
-        self.canvas.bind("<B1-Motion>", self.update_sel_rect)
-        self.canvas.bind("<ButtonRelease-1>", self.get_mouse_screenshot)
-        self.canvas.bind("<Button-2>", self.make_app_invisible)
-        # キーボードイベント（KeyboardListenerから取得）
-        self.root.bind("<<ScreenshotAppEvent>>", self.on_mouse_screenshot_event)
-        self.root.bind("<<FullScreenshotEvent>>", self.on_full_screenshot_event)
-        self.root.bind("<<BackEvent>>", self.on_back_event)
-        self.root.bind("<<ForwardEvent>>", self.on_forward_event)
-        self.root.bind("<<ExitEvent>>", self.on_exit_event)
 
     def set_root_appearance(self) -> None:
         """外観の設定"""
@@ -116,6 +99,93 @@ class ScreenshotApp:
             fill="gray",
             outline="",
         )
+
+    def make_app_invisible(self, event: tk.Event | None) -> None:
+        """アプリを非表示にする"""
+        self.root.withdraw()
+
+    def reset_cord(self) -> None:
+        """座標の初期化"""
+        self.topx, self.topy, self.botx, self.boty = 0, 0, 0, 0
+        self.canvas.coords(self.rect_id, 0, 0, 0, 0)
+        self.root.update()
+
+    def set_bind(self) -> None:
+        """イベントに関数をバインド"""
+        # マウスイベント
+        self.canvas.bind("<Button-1>", self.get_mouse_posn)
+        self.canvas.bind("<B1-Motion>", self.update_sel_rect)
+        self.canvas.bind("<ButtonRelease-1>", self.get_mouse_screenshot)
+        self.canvas.bind("<Button-2>", self.make_app_invisible)
+        # キーボードイベント（KeyboardListenerから取得）
+        self.root.bind("<<MouseScreenshotEvent>>", self.on_mouse_screenshot_event)
+        self.root.bind("<<FullScreenshotEvent>>", self.on_full_screenshot_event)
+        self.root.bind("<<BackEvent>>", self.on_back_event)
+        self.root.bind("<<ForwardEvent>>", self.on_forward_event)
+        self.root.bind("<<ExitEvent>>", self.on_exit_event)
+
+    def on_mouse_screenshot_event(self, event: tk.Event) -> None:
+        """アプリを表示する"""
+        self.root.deiconify()
+
+    def get_mouse_posn(self, event: tk.Event) -> None:
+        """マウスの座標を記録する"""
+        self.topx, self.topy = event.x, event.y
+
+    def update_sel_rect(self, event: tk.Event) -> None:
+        """マウス選択領域を更新する"""
+        self.botx, self.boty = event.x, event.y
+        self.canvas.coords(self.rect_id, self.topx, self.topy, self.botx, self.boty)
+
+    def get_mouse_screenshot(self, event: tk.Event) -> None:
+        """選択領域をスクショ"""
+        topx, botx = min(self.topx, self.botx), max(self.topx, self.botx)
+        topy, boty = min(self.topy, self.boty), max(self.topy, self.boty)
+        self.reset_cord()
+        self.root.withdraw()
+
+        filepath = self.get_filename(fullpath=True)
+        self.save_screenshot(filepath, bbox=[topx, topy, botx, boty])
+        self.prompt()
+
+    def on_full_screenshot_event(self, event: tk.Event) -> None:
+        """全画面スクショ"""
+        filepath = self.get_filename(fullpath=True)
+        self.save_screenshot(filepath)
+        self.prompt()
+
+    def save_screenshot(self, filepath, bbox=None) -> None:
+        """
+        スクショ保存、サウンド、メッセージ
+
+        Args:
+            filepath: 保存先ファイルパス
+            bbox: 保存する領域
+        """
+        asyncio.run(play_sound())
+        ImageGrab.grab(bbox=bbox).save(filepath, quality=100)
+        print("保存しました > " + str(filepath))
+
+    def prompt(self) -> None:
+        """撮影を促すメッセージを出す"""
+        print(str(self.get_filename()) + "を撮影してください")
+
+    def on_back_event(self, event: tk.Event) -> None:
+        """前のディレクトリに戻る"""
+        if self.dir_idx > 0:
+            self.dir_idx -= 1
+        self.prompt()
+
+    def on_forward_event(self, event: tk.Event) -> None:
+        """次のディレクトリに進む"""
+        if self.dir_idx < len(self.dirs) - 1:
+            self.dir_idx += 1
+        self.prompt()
+
+    def on_exit_event(self, event: tk.Event) -> None:
+        """アプリを終了する"""
+        print("終了します")
+        self.root.destroy()
 
     def get_filename(self, fullpath: bool = False) -> str | Path:
         """
@@ -148,74 +218,6 @@ class ScreenshotApp:
         if fullpath:
             res = dir / Path(res)
         return res
-
-    def make_app_invisible(self, event: tk.Event | None) -> None:
-        """アプリを非表示にする"""
-        self.root.withdraw()
-
-    def on_mouse_screenshot_event(self, event: tk.Event) -> None:
-        """アプリを表示する"""
-        self.root.deiconify()
-
-    def on_full_screenshot_event(self, event: tk.Event) -> None:
-        """全画面スクショをとる"""
-        filepath = self.get_filename(fullpath=True)
-        self.save_full_screenshot(filepath)
-        asyncio.run(play_sound())
-        print("保存しました > " + str(filepath))
-        self.prompt()
-
-    def on_back_event(self, event: tk.Event) -> None:
-        """前のディレクトリに戻る"""
-        if self.dir_idx > 0:
-            self.dir_idx -= 1
-        self.prompt()
-
-    def on_forward_event(self, event: tk.Event) -> None:
-        """次のディレクトリに進む"""
-        if self.dir_idx < len(self.dirs) - 1:
-            self.dir_idx += 1
-        self.prompt()
-
-    def on_exit_event(self, event: tk.Event) -> None:
-        """アプリを終了する"""
-        print("Exit")
-        self.root.destroy()
-
-    def get_mouse_posn(self, event: tk.Event) -> None:
-        """マウスの座標を記録する"""
-        self.topx, self.topy = event.x, event.y
-
-    def update_sel_rect(self, event: tk.Event) -> None:
-        """マウス選択領域を更新する"""
-        self.botx, self.boty = event.x, event.y
-        self.canvas.coords(self.rect_id, self.topx, self.topy, self.botx, self.boty)
-
-    def get_mouse_screenshot(self, event: tk.Event) -> None:
-        """マウス選択領域をスクショする"""
-        self.topx, self.botx = min(self.topx, self.botx), max(self.topx, self.botx)
-        self.topy, self.boty = min(self.topy, self.boty), max(self.topy, self.boty)
-        self.root.withdraw()
-        filepath = self.get_filename(fullpath=True)
-        self.save_mouse_screenshot(filepath)
-        asyncio.run(play_sound())
-        print("保存しました > " + str(filepath))
-        self.prompt()
-        self.reset_cord()
-
-    def save_mouse_screenshot(self, filepath) -> None:
-        """マウススクショの保存"""
-        ImageGrab.grab(bbox=(self.topx, self.topy, self.botx, self.boty)).save(
-            filepath, quality=100
-        )
-
-    def save_full_screenshot(self, filepath) -> None:
-        """全画面スクショの保存"""
-        ImageGrab.grab().save(filepath, quality=100)
-
-    def prompt(self) -> None:
-        """撮影を促すメッセージを出す"""
-        print(str(self.get_filename()) + "を撮影してください")
 
 
 def start_app(dirs, dir_idx) -> None:

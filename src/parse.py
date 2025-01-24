@@ -2,9 +2,7 @@ import argparse
 import datetime
 from pathlib import Path
 
-from screenshot_class import start_app
-
-DEBUG = True
+from screenshot_app import start_app
 
 
 def parse() -> tuple[list[int], int, str]:
@@ -14,8 +12,9 @@ def parse() -> tuple[list[int], int, str]:
     Returns:
         項番一覧、初期項番、作成する親ディレクトリの名前
     """
-    # デフォルトの保存先ディレクトリ名
-    now: str = datetime.datetime.now().strftime("%Y%m%d%H%M%S")
+    now = datetime.datetime.now().strftime(
+        "%Y%m%d%H%M%S"
+    )  # デフォルトの保存先ディレクトリ
 
     parser = argparse.ArgumentParser(description="スクリーンショットを連続で撮影する。")
     parser.add_argument(
@@ -32,6 +31,7 @@ def parse() -> tuple[list[int], int, str]:
     parser.add_argument(
         "-d", "--dirname", default=now, type=str, help="保存先のディレクトリ名。"
     )
+
     args = parser.parse_args()
     numbers, start, dirname = args.numbers, args.start, args.dirname
 
@@ -44,7 +44,8 @@ def parse() -> tuple[list[int], int, str]:
 
 def makedirs(numbers: list[int], dirname: str) -> list[Path]:
     """
-    親ディレクトリとその子ディレクトリを作る
+    親ディレクトリとその子ディレクトリを作る。
+    子ディレクトリのパスを返す。
 
     Args:
         numbers: 項番一覧
@@ -64,5 +65,6 @@ def makedirs(numbers: list[int], dirname: str) -> list[Path]:
 
 if __name__ == "__main__":
     numbers, start, dirname = parse()
+    dir_idx = numbers.index(start)
     dirs = makedirs(numbers, dirname)
-    start_app(dirs, numbers.index(start))
+    start_app(dirs, dir_idx)

@@ -1,0 +1,10 @@
+{
+    "play_sound": true,
+    "keymap": {
+        "full_screenshot": 96,
+        "mouse_screenshot": 97,
+        "back": 100,
+        "forward": 102,
+        "exit": 105
+    }
+}

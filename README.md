@@ -1,29 +1,35 @@
 スクリーンショットを連続で撮影するスクリプト
 
-# 使い方
+## 設定
+
+config.json に記述する
+
+-   play_sound: 撮影時に音を出すか
+
+keymap 以下にはキーコードを記述する
+
+-   full_screenshot: フルスクリーンショット
+-   mouse_screenshot: マウスでスクリーンショット
+-   back: 前の項番に戻る
+-   forward: 次の項番に進む
+-   exit: 終了
+
+デフォルトではテンキーを割り当てる
 
 ## 起動
 
 ```bash
-python evidence.py --number {1..5} --start 3 --dirname testdir
+python screenshot.py --numbers {1..5} --start 3 --dirname testdir
 ```
 
--   --number/-n: 項番
--   --start/-s: 最初の項番
--   --dirname/-d: 保存先の親ディレクトリ
+-   --numbers / -n: 項番（必須）
+-   --start / -s: 最初の項番（任意）
+-   --dirname / -d: 保存先の親ディレクトリ(任意)
 
 ## 起動後
-
-テンキーで操作する
-
--   0: 全画面スクショ
--   1: マウスで選択した領域をスクショ
--   4: 前のディレクトリ
--   6: 次のディレクトリ
--   9: 終了
 
 マウスで領域を選択するときの操作
 
 -   左ボタン押下：選択開始
--   左ボタンリリース：選択終了
+-   左ボタンリリース：選択を終了し撮影
 -   ホイールクリック：選択中止

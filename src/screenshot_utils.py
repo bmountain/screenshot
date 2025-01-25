@@ -1,8 +1,37 @@
 import argparse
 import datetime
+import json
 from pathlib import Path
 
-from screenshot_app import start_app
+from pydantic.dataclasses import dataclass
+
+
+@dataclass
+class Keymap:
+    """キーコード"""
+
+    full_screenshot: int
+    mouse_screenshot: int
+    back: int
+    forward: int
+    exit: int
+
+
+@dataclass
+class Config:
+    """設定"""
+
+    play_sound: bool
+    keymap: Keymap
+
+
+def load_config(json_path: Path | None = None) -> Config:
+    """jsonを読み込んでConfigにする"""
+    if json_path is None:
+        json_path = Path(__file__).parent.parent / Path("config.json")
+    with open(json_path, "r") as f:
+        config = json.load(f)
+    return Config(**config)
 
 
 def parse() -> tuple[list[int], int, str]:
@@ -35,11 +64,12 @@ def parse() -> tuple[list[int], int, str]:
     args = parser.parse_args()
     numbers, start, dirname = args.numbers, args.start, args.dirname
 
-    # startが有効な値でなければnumbersの最小値とする
-    if start is None or start not in numbers:
-        start = min(numbers)
+    try:
+        dir_idx = numbers.index(start)
+    except:
+        dir_idx = 0
 
-    return numbers, start, dirname
+    return numbers, dir_idx, dirname
 
 
 def makedirs(numbers: list[int], dirname: str) -> list[Path]:
@@ -61,10 +91,3 @@ def makedirs(numbers: list[int], dirname: str) -> list[Path]:
     for child in children:
         child.mkdir(exist_ok=True)
     return children
-
-
-if __name__ == "__main__":
-    numbers, start, dirname = parse()
-    dir_idx = numbers.index(start)
-    dirs = makedirs(numbers, dirname)
-    start_app(dirs, dir_idx)

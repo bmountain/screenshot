@@ -11,6 +11,8 @@ import screeninfo
 from PIL import ImageGrab
 from pynput import keyboard
 
+from .screenshot_utils import Config, Keymap
+
 
 async def play_sound() -> None:
     """
@@ -28,8 +30,9 @@ class KeyboardListener(keyboard.Listener):
     テンキー押下を検出してScreenshotAppにイベントを送信する
     """
 
-    def __init__(self, root: tk.Tk) -> None:
+    def __init__(self, root: tk.Tk, keymap: Keymap) -> None:
         super().__init__(on_press=self.on_press)
+        self.keymap = keymap
         self.daemon = True
         self.root = root
 
@@ -41,24 +44,27 @@ class KeyboardListener(keyboard.Listener):
             key: 押下されたキー
         """
         if isinstance(key, keyboard.KeyCode):
-            if key.vk == 96:
+            if key.vk == self.keymap.full_screenshot:
                 self.root.event_generate("<<FullScreenshotEvent>>")
-            if key.vk == 97:
+            if key.vk == self.keymap.mouse_screenshot:
                 self.root.event_generate("<<MouseScreenshotEvent>>")
-            if key.vk == 100:
+            if key.vk == self.keymap.back:
                 self.root.event_generate("<<BackEvent>>")
-            if key.vk == 102:
+            if key.vk == self.keymap.forward:
                 self.root.event_generate("<<ForwardEvent>>")
-            if key.vk == 105:
+            if key.vk == self.keymap.exit:
                 self.root.event_generate("<<ExitEvent>>")
 
 
 class ScreenshotApp:
     """スクリーンショットをとる"""
 
-    def __init__(self, root: tk.Tk, dirs: list[Path], dir_idx: int) -> None:
+    def __init__(
+        self, root: tk.Tk, dirs: list[Path], dir_idx: int, config: Config
+    ) -> None:
         self.dirs = dirs
         self.dir_idx = dir_idx
+        self.play_sound = config.play_sound
         self.root = root
         self.rect_id: int
         self.topx, self.topy, self.botx, self.boty = 0, 0, 0, 0
@@ -67,7 +73,7 @@ class ScreenshotApp:
         self.make_app_invisible(event=None)
         self.reset_cord()
         self.set_bind()
-        keyboard_listener = KeyboardListener(self.root)
+        keyboard_listener = KeyboardListener(self.root, config.keymap)
         keyboard_listener.start()
         self.prompt()
 
@@ -162,7 +168,8 @@ class ScreenshotApp:
             filepath: 保存先ファイルパス
             bbox: 保存する領域
         """
-        asyncio.run(play_sound())
+        if self.play_sound:
+            asyncio.run(play_sound())
         ImageGrab.grab(bbox=bbox).save(filepath, quality=100)
         print("保存しました > " + str(filepath))
 
@@ -220,8 +227,8 @@ class ScreenshotApp:
         return res
 
 
-def start_app(dirs, dir_idx) -> None:
+def start_app(dirs: list[Path], dir_idx: int, config: Config) -> None:
     """アプリを起動する"""
     root = tk.Tk()
-    app = ScreenshotApp(root, dirs, dir_idx)
+    app = ScreenshotApp(root, dirs, dir_idx, config)
     app.root.mainloop()

@@ -3,11 +3,11 @@ import datetime
 import json
 from pathlib import Path
 
+from pydantic import BaseModel
 from pydantic.dataclasses import dataclass
 
 
-@dataclass
-class Keymap:
+class Keymap(BaseModel):
     """キーコード"""
 
     full_screenshot: int
@@ -17,8 +17,7 @@ class Keymap:
     exit: int
 
 
-@dataclass
-class Config:
+class Config(BaseModel):
     """設定"""
 
     play_sound: bool

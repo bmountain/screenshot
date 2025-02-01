@@ -31,7 +31,7 @@ class KeyboardListener(keyboard.Listener):
     """
 
     def __init__(self, root: tk.Tk, keymap: Keymap) -> None:
-        super().__init__(on_press=self.on_press)
+        super().__init__(on_press=self.on_press, suppress=True)
         self.keymap = keymap
         self.daemon = True
         self.root = root

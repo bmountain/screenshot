@@ -7,7 +7,6 @@ from pydantic import BaseModel
 from pydantic.dataclasses import dataclass
 
 
-# @dataclass
 class Keymap(BaseModel):
     """キーコード"""
 
@@ -18,7 +17,6 @@ class Keymap(BaseModel):
     exit: int
 
 
-# @dataclass
 class Config(BaseModel):
     """設定"""
 

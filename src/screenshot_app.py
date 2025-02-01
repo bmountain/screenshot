@@ -1,6 +1,5 @@
 import asyncio
 import glob
-import inspect
 import os
 import platform
 import re

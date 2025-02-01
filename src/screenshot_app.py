@@ -1,11 +1,13 @@
 import asyncio
 import glob
+import inspect
 import os
 import platform
 import re
 import tkinter as tk
 import winsound
 from pathlib import Path
+from typing import Any
 
 import screeninfo
 from PIL import ImageGrab
@@ -31,29 +33,38 @@ class KeyboardListener(keyboard.Listener):
     """
 
     def __init__(self, root: tk.Tk, keymap: Keymap) -> None:
-        super().__init__(on_press=self.on_press, suppress=True)
+        super().__init__(win32_event_filter=self.win32_event_filter)
         self.keymap = keymap
         self.daemon = True
         self.root = root
 
-    def on_press(self, key: keyboard.Key | keyboard.KeyCode | None) -> None:
+    # FIXME: フルスクリーンショットだけsuppress_event()が効かない
+    def win32_event_filter(self, msg: int, data: Any) -> None:
         """
-        テンキー押下を検出してScreenshotAppにイベントを送信する
+        操作がマップされたキーの押下を検出してScreenshotAppにイベントを送信する。
+        そのキーの押下に関する情報はほかのアプリケーションに送らない。
 
         Args:
-            key: 押下されたキー
+            msg: 詳細不明
+            data: キーに関する情報
         """
-        if isinstance(key, keyboard.KeyCode):
-            if key.vk == self.keymap.full_screenshot:
+        # キーがリリースされた場合と無関係なキー操作には何もしない
+        if (data.flags != 0) or (data.vkCode not in self.keymap.model_dump().values()):
+            return None
+
+        match data.vkCode:
+            case self.keymap.full_screenshot:
                 self.root.event_generate("<<FullScreenshotEvent>>")
-            if key.vk == self.keymap.mouse_screenshot:
+            case self.keymap.mouse_screenshot:
                 self.root.event_generate("<<MouseScreenshotEvent>>")
-            if key.vk == self.keymap.back:
+            case self.keymap.back:
                 self.root.event_generate("<<BackEvent>>")
-            if key.vk == self.keymap.forward:
+            case self.keymap.forward:
                 self.root.event_generate("<<ForwardEvent>>")
-            if key.vk == self.keymap.exit:
+            case self.keymap.exit:
                 self.root.event_generate("<<ExitEvent>>")
+
+        super().suppress_event()  # type: ignore
 
 
 class ScreenshotApp:

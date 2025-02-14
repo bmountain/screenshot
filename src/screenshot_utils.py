@@ -33,7 +33,7 @@ def load_config(json_path: Path | None = None) -> Config:
     return Config(**config)
 
 
-def get_nubmers(dirname) -> list[int]:
+def get_numbers(dirname) -> list[int]:
     """
     指定されたディレクトリが含む子ディレクトリ一覧を返す。
     子ディレクトリの名前はすべて整数でなければならない。
@@ -47,6 +47,10 @@ def get_nubmers(dirname) -> list[int]:
         子ディレクトリ名一覧
     """
     parent = Path.cwd() / Path(dirname)
+
+    if not parent.exists():
+        raise Exception("ディレクトリが存在しません。")
+
     try:
         children = [
             int(child)
@@ -69,9 +73,6 @@ def parse() -> tuple[list[int], int, str]:
     Returns:
         項番一覧、初期項番、作成する親ディレクトリの名前
     """
-    now = datetime.datetime.now().strftime(
-        "%Y%m%d%H%M%S"
-    )  # デフォルトの保存先ディレクトリ
 
     parser = argparse.ArgumentParser(description="スクリーンショットを連続で撮影する。")
     parser.add_argument(
@@ -79,20 +80,24 @@ def parse() -> tuple[list[int], int, str]:
         "--numbers",
         type=int,
         nargs="*",
-        help="項番。スペース区切りの自然数で指定。",
+        help="項番。スペース区切りの整数で指定。",
     )
     parser.add_argument(
         "-s", "--start", default=None, type=int, help="撮影開始時の項番。"
     )
-    parser.add_argument(
-        "-d", "--dirname", default=now, type=str, help="保存先のディレクトリ名。"
-    )
+    parser.add_argument("-d", "--dirname", type=str, help="保存先のディレクトリ名。")
 
     args = parser.parse_args()
     numbers, start, dirname = args.numbers, args.start, args.dirname
 
-    if numbers is None:
-        numbers = get_nubmers(dirname)
+    if (numbers is None) and (dirname is None):
+        raise Exception("項番とディレクトリ名がいずれも指定されていません。")
+    elif numbers is None:
+        numbers = get_numbers(dirname)
+    elif dirname is None:
+        dirname = datetime.datetime.now().strftime(
+            "%Y%m%d%H%M%S"
+        )  # デフォルトの保存先ディレクトリ
 
     try:
         dir_idx = numbers.index(start)

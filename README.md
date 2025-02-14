@@ -40,7 +40,8 @@ python screenshot.py --dirname testdir --numbers 1 2 3
 
 注：
 
--   --numbers を指定した場合、--dirname は省略できて現在時刻がディレクトリ名となります。
+-   --numbers と--dirname を両方した場合でも既存のディレクトリ・スクリーンショットは上書きされません。--numbers で指定した項番のみが撮影対象となります。
+-   --numbers を指定した場合、--dirname は省略できて現在時刻がデフォルトとなります。
 -   --start を指定できます。
 
 #### 撮影継続
@@ -51,6 +52,10 @@ python screenshot.py --dirname testdir --start 2
 
 -   このように--numbers オプションがないと testdir の子ディレクトリを項番とみなして撮影を行います。
 -   --start オプションに 2 が渡されているので、項番 2 から撮影が始まります。
+
+注：
+
+-   子ディレクトリが無い場合と整数でない名前の子ディレクトリがある場合はエラーになります。
 
 ### 起動後
 

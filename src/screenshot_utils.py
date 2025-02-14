@@ -1,10 +1,10 @@
 import argparse
 import datetime
 import json
+import os
 from pathlib import Path
 
 from pydantic import BaseModel
-from pydantic.dataclasses import dataclass
 
 
 class Keymap(BaseModel):
@@ -33,6 +33,35 @@ def load_config(json_path: Path | None = None) -> Config:
     return Config(**config)
 
 
+def get_nubmers(dirname) -> list[int]:
+    """
+    指定されたディレクトリが含む子ディレクトリ一覧を返す。
+    子ディレクトリの名前はすべて整数でなければならない。
+    子ディレクトリは一つ以上なければならない。
+    そうでなければNumberInputExceptionを送出する。
+
+    Args:
+        dirname: ディレクトリ名
+
+    Returns:
+        子ディレクトリ名一覧
+    """
+    parent = Path.cwd() / Path(dirname)
+    try:
+        children = [
+            int(child)
+            for child in os.listdir(parent)
+            if os.path.isdir(os.path.join(parent, child))
+        ]
+    except:
+        raise Exception("子ディレクトリの名前は整数でなければいけません。")
+
+    if len(children) == 0:
+        raise Exception("指定されたディレクトリが空です。")
+
+    return children
+
+
 def parse() -> tuple[list[int], int, str]:
     """
     引数をパースする
@@ -50,7 +79,6 @@ def parse() -> tuple[list[int], int, str]:
         "--numbers",
         type=int,
         nargs="*",
-        required=True,
         help="項番。スペース区切りの自然数で指定。",
     )
     parser.add_argument(
@@ -62,6 +90,9 @@ def parse() -> tuple[list[int], int, str]:
 
     args = parser.parse_args()
     numbers, start, dirname = args.numbers, args.start, args.dirname
+
+    if numbers is None:
+        numbers = get_nubmers(dirname)
 
     try:
         dir_idx = numbers.index(start)

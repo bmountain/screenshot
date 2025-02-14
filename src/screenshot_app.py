@@ -11,6 +11,7 @@ from typing import Any
 import screeninfo
 from PIL import ImageGrab
 from pynput import keyboard
+from pynput.keyboard import Key, KeyCode
 
 from .screenshot_utils import Config, Keymap
 
@@ -32,26 +33,25 @@ class KeyboardListener(keyboard.Listener):
     """
 
     def __init__(self, root: tk.Tk, keymap: Keymap) -> None:
-        super().__init__(win32_event_filter=self.win32_event_filter)
+        super().__init__(
+            win32_event_filter=self.win32_event_filter, on_press=self.on_press
+        )
         self.keymap = keymap
         self.daemon = True
         self.root = root
 
-    # FIXME: フルスクリーンショットだけsuppress_event()が効かない
-    def win32_event_filter(self, msg: int, data: Any) -> None:
+    def on_press(self, key: Key | KeyCode | None) -> None:
         """
-        操作がマップされたキーの押下を検出してScreenshotAppにイベントを送信する。
-        そのキーの押下に関する情報はほかのアプリケーションに送らない。
+        キー押下時の処理。
+        キーコードがマップされたものであればScreenshotAppにイベントを送信する。
 
         Args:
-            msg: 詳細不明
-            data: キーに関する情報
+            key: 押されたキー
         """
-        # キーがリリースされた場合と無関係なキー操作には何もしない
-        if (data.flags != 0) or (data.vkCode not in self.keymap.model_dump().values()):
+        if not isinstance(key, KeyCode):
             return None
 
-        match data.vkCode:
+        match key.vk:
             case self.keymap.full_screenshot:
                 self.root.event_generate("<<FullScreenshotEvent>>")
             case self.keymap.mouse_screenshot:
@@ -63,7 +63,20 @@ class KeyboardListener(keyboard.Listener):
             case self.keymap.exit:
                 self.root.event_generate("<<ExitEvent>>")
 
-        super().suppress_event()  # type: ignore
+    def win32_event_filter(self, msg: int, data: Any) -> bool:
+        """
+        マップされたキーの入力を他のアプリケーションから隠す。
+        Windowsでのみ動作する。
+
+        Args:
+            msg: 詳細不明
+            data: キーに関する情報
+        """
+        if data.vkCode in self.keymap.model_dump().values():
+            self._suppress = True
+        else:
+            self._suppress = False
+        return True
 
 
 class ScreenshotApp:

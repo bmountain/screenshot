@@ -1,7 +1,6 @@
 import argparse
 import datetime
 import json
-import os
 from pathlib import Path
 
 from pydantic import BaseModel
@@ -33,12 +32,12 @@ def load_config(json_path: Path | None = None) -> Config:
     return Config(**config)
 
 
-def get_numbers(dirname) -> list[int]:
+def get_numbers(dirname: str) -> list[int]:
     """
     指定されたディレクトリが含む子ディレクトリ一覧を返す。
     子ディレクトリの名前はすべて整数でなければならない。
     子ディレクトリは一つ以上なければならない。
-    そうでなければNumberInputExceptionを送出する。
+    そうでなければ例外を送出する。
 
     Args:
         dirname: ディレクトリ名
@@ -46,17 +45,15 @@ def get_numbers(dirname) -> list[int]:
     Returns:
         子ディレクトリ名一覧
     """
-    parent = Path.cwd() / Path(dirname)
+    parent = Path(dirname)
 
     if not parent.exists():
         raise Exception("ディレクトリが存在しません。")
 
     try:
-        children = [
-            int(child)
-            for child in os.listdir(parent)
-            if os.path.isdir(os.path.join(parent, child))
-        ]
+        children = sorted(
+            [int(child.name) for child in parent.glob("*") if child.is_dir()]
+        )
     except:
         raise Exception("子ディレクトリの名前は整数でなければいけません。")
 
@@ -120,7 +117,7 @@ def makedirs(numbers: list[int], dirname: str) -> list[Path]:
         子ディレクトリのパス一覧
     """
 
-    parent = Path.cwd() / Path(dirname)
+    parent = Path(dirname)
     children = [parent / Path(f"{n}") for n in numbers]
     parent.mkdir(exist_ok=True)
     for child in children:

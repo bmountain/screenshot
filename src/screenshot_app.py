@@ -1,6 +1,4 @@
 import asyncio
-import glob
-import os
 import platform
 import re
 import tkinter as tk
@@ -229,14 +227,13 @@ class ScreenshotApp:
             ファイル名かパス
         """
         dir = self.dirs[self.dir_idx]
-        os.chdir(dir)
-        png_list = glob.glob("*.png")
+        png_list = list(dir.glob("*.png"))
 
         # 新規ファイルにつける番号は既存ファイルに含まれる最後の数字のうち最大のもの+1
         img_indices: list[int] = []
         pattern = r"(\d+)(?!.*\d)"
         for png in png_list:
-            search_result = re.search(pattern, png)
+            search_result = re.search(pattern, png.stem)
             if search_result is not None:
                 img_indices.append(int(search_result.group()))
         if img_indices:
@@ -244,7 +241,7 @@ class ScreenshotApp:
         else:
             idx = 1
 
-        res = str(os.path.basename(dir)) + "-" + str(idx) + ".png"
+        res = dir.name + "-" + str(idx) + ".png"
         if fullpath:
             res = dir / Path(res)
         return res

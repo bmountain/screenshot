@@ -119,7 +119,7 @@ def makedirs(numbers: list[int], dirname: str) -> list[Path]:
 
     parent = Path(dirname)
     children = [parent / Path(f"{n}") for n in numbers]
-    parent.mkdir(exist_ok=True)
+    parent.mkdir(exist_ok=True, parents=True)
     for child in children:
         child.mkdir(exist_ok=True)
     return children
